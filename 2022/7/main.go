@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -136,15 +135,15 @@ func totalSizeBelowThreshold(t *Tree, threshold uint64) uint64 {
 
 func findSmallestDirToRemove(t *Tree, targetSpace uint64) uint64 {
 	root := t
+	smallest := root.Size
 	queue := []*Tree{t}
-	candidates := []*Tree{}
 
 	for len(queue) > 0 {
 		node := queue[0]
 		queue = queue[1:]
 
-		if node.Type == Directory && root.Size-node.Size <= targetSpace {
-			candidates = append(candidates, node)
+		if node.Type == Directory && root.Size-node.Size <= targetSpace && node.Size < smallest {
+			smallest = node.Size
 		}
 
 		for _, n := range node.Children {
@@ -154,9 +153,5 @@ func findSmallestDirToRemove(t *Tree, targetSpace uint64) uint64 {
 		}
 	}
 
-	sort.Slice(candidates, func(i, j int) bool {
-		return candidates[i].Size < candidates[j].Size
-	})
-
-	return candidates[0].Size
+	return smallest
 }
