@@ -36,7 +36,7 @@ func CreateCRT(commands []Command) *CRT {
 	}
 
 	for _, c := range commands {
-		if math.Abs(float64(crt.cycle%40-crt.x)) < 2 {
+		if math.Abs(float64(crt.cycle%crt.width-crt.x)) < 2 {
 			i := crt.cycle / crt.width
 			j := crt.cycle % crt.width
 			crt.Pixels[i][j] = '#'
@@ -48,7 +48,7 @@ func CreateCRT(commands []Command) *CRT {
 		}
 		if c.Instruction == "addx" {
 			crt.cycle++
-			if math.Abs(float64(crt.cycle%40-crt.x)) < 2 {
+			if math.Abs(float64(crt.cycle%crt.width-crt.x)) < 2 {
 				i := crt.cycle / crt.width
 				j := crt.cycle % crt.width
 				crt.Pixels[i][j] = '#'
