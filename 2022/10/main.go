@@ -14,60 +14,59 @@ type Command struct {
 	Arg         int
 }
 
-type CRT struct {
-	commands []Command
-	Pixels   [][]rune
-	width    int
-	height   int
-	x        int
-	cycle    int
+type VM struct {
+	Pixels [][]rune
+	width  int
+	height int
+	x      int
+	cycle  int
 }
 
-func CreateCRT(commands []Command) *CRT {
-	crt := &CRT{width: 40, height: 6, commands: commands, x: 1, cycle: 0}
+func CreateVM(width int, height int) *VM {
+	vm := &VM{width: width, height: height, x: 1, cycle: 0}
 
-	crt.Pixels = make([][]rune, crt.height)
+	vm.Pixels = make([][]rune, vm.height)
 
-	for i := 0; i < crt.height; i++ {
-		crt.Pixels[i] = make([]rune, crt.width)
-		for j := 0; j < crt.width; j++ {
-			crt.Pixels[i][j] = '.'
+	for i := 0; i < vm.height; i++ {
+		vm.Pixels[i] = make([]rune, vm.width)
+		for j := 0; j < vm.width; j++ {
+			vm.Pixels[i][j] = '.'
 		}
 	}
 
-	for _, c := range commands {
-		if math.Abs(float64(crt.cycle%crt.width-crt.x)) < 2 {
-			i := crt.cycle / crt.width
-			j := crt.cycle % crt.width
-			crt.Pixels[i][j] = '#'
-		}
+	return vm
+}
 
+func (vm *VM) tick() {
+	if math.Abs(float64(vm.cycle%vm.width-vm.x)) < 2 {
+		i := vm.cycle / vm.width
+		j := vm.cycle % vm.width
+		vm.Pixels[i][j] = '#'
+	}
+
+	vm.cycle++
+}
+
+func (vm *VM) Execute(commands []Command) {
+	for _, c := range commands {
 		if c.Instruction == "noop" {
-			crt.cycle++
-			continue
+			vm.tick()
 		}
 		if c.Instruction == "addx" {
-			crt.cycle++
-			if math.Abs(float64(crt.cycle%crt.width-crt.x)) < 2 {
-				i := crt.cycle / crt.width
-				j := crt.cycle % crt.width
-				crt.Pixels[i][j] = '#'
-			}
-			crt.cycle++
-			crt.x += c.Arg
+			vm.tick()
+			vm.tick()
+			vm.x += c.Arg
 		}
 	}
-
-	return crt
 }
 
-func (crt *CRT) String() string {
+func (vm *VM) String() string {
 	var s strings.Builder
 
-	for i := 0; i < crt.height; i++ {
+	for i := 0; i < vm.height; i++ {
 		fmt.Fprintf(&s, "%d [", i+1)
-		for j := 0; j < crt.width; j++ {
-			fmt.Fprintf(&s, "%c", crt.Pixels[i][j])
+		for j := 0; j < vm.width; j++ {
+			fmt.Fprintf(&s, "%c", vm.Pixels[i][j])
 		}
 		fmt.Fprint(&s, "]\n")
 	}
@@ -93,6 +92,7 @@ func main() {
 		commands = append(commands, Command{Instruction: instruction, Arg: arg})
 	}
 
-	crt := CreateCRT(commands)
-	fmt.Println(crt)
+	vm := CreateVM(40, 6)
+	vm.Execute(commands)
+	fmt.Println(vm)
 }
