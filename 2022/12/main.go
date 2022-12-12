@@ -30,25 +30,33 @@ func (g Grid) IsInside(p Point) bool {
 
 func main() {
 	grid := Grid{}
+	//var start Point
+	var goal Point
 	scanner := bufio.NewScanner(os.Stdin)
+
+	x := 0
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		row := []int{}
-		for _, c := range line {
+		for y, c := range line {
 			if c == 'S' {
 				row = append(row, 1)
+				// start = Point{x, y}
 
 			} else if c == 'E' {
 				row = append(row, 'z'-'a'+2)
+				goal = Point{x, y}
 			} else {
 				row = append(row, int(c)-'a'+1)
 			}
 		}
 
 		grid = append(grid, row)
+		x++
 	}
-	fmt.Println(bfs(grid, Point{0, 0}, 'z'-'a'+2))
+	//fmt.Println(bfs(grid, start, 'z'-'a'+2))
+	fmt.Println(bfs(grid, goal, 1))
 }
 
 func bfs(grid Grid, start Point, target int) (steps int) {
@@ -82,7 +90,7 @@ func bfs(grid Grid, start Point, target int) (steps int) {
 		for _, d := range directions {
 			newPoint := pos.AddPoint(d)
 
-			if grid.IsInside(newPoint) && grid.GetValue(newPoint)-grid.GetValue(pos) <= 1 {
+			if grid.IsInside(newPoint) && grid.GetValue(pos)-grid.GetValue(newPoint) <= 1 {
 				queue = append(queue, struct {
 					p     Point
 					score int
