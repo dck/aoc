@@ -96,7 +96,6 @@ func shortestPathsMap(nodes ValveMap) [][]int {
 		for j := 0; j < len(result[i]); j++ {
 			result[i][j] = math.MaxInt
 		}
-
 	}
 
 	for n, valve := range nodes {
