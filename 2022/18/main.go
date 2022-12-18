@@ -107,6 +107,8 @@ func Part2(cubes []Point) int {
 
 	water := map[Point]bool{}
 	queue := []Point{minPoint}
+	total := 0
+
 	for len(queue) > 0 {
 		point := queue[0]
 		queue = queue[1:]
@@ -115,6 +117,7 @@ func Part2(cubes []Point) int {
 		}
 
 		water[point] = true
+
 		for _, m := range modifiers {
 			adj := point.Modify(m)
 
@@ -122,26 +125,16 @@ func Part2(cubes []Point) int {
 				continue
 			}
 
-			if water[adj] || lava[adj] {
-				continue
-			}
-
-			queue = append(queue, adj)
-		}
-	}
-
-	total := 0
-	for w := range water {
-		for _, m := range modifiers {
-			adj := w.Modify(m)
-
-			if adj.x < minPoint.x || adj.y < minPoint.y || adj.z < minPoint.z || adj.x > maxPoint.x || adj.y > maxPoint.y || adj.z > maxPoint.z {
+			if water[adj] {
 				continue
 			}
 
 			if lava[adj] {
 				total += 1
+				continue
 			}
+
+			queue = append(queue, adj)
 		}
 	}
 
