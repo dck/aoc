@@ -4,112 +4,115 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
-	"strings"
 )
 
-const (
-	ORE      = "ore"
-	CLAY     = "clay"
-	OBSIDIAN = "obsidian"
-	GEODE    = "geode"
-)
-
-var Priorities []string = []string{GEODE, OBSIDIAN, CLAY, ORE}
-
-type Resource map[string]int
 type Blueprint struct {
-	index      int
-	Generation int
-	Robots     []string
-	Resources  Resource
-	Costs      map[string]Resource
+	index        int
+	OreCost      int
+	ClayCost     int
+	ObsidianCost [2]int
+	GeodeCost    [2]int
 }
 
-func CreateBlueprint(i int) *Blueprint {
-	b := &Blueprint{
-		index:      i,
-		Generation: 1,
-		Robots:     make([]string, 0),
-		Resources:  map[string]int{ORE: 0, CLAY: 0, OBSIDIAN: 0, GEODE: 0},
-		Costs:      make(map[string]Resource),
+type State struct {
+	Generation     int
+	GeodeRobots    int
+	Geode          int
+	ObsidianRobots int
+	Obsidian       int
+	ClayRobots     int
+	Clay           int
+	OreRobots      int
+	Ore            int
+}
+
+func CreateState() State {
+	s := State{
+		Generation: 0,
+		OreRobots:  1,
 	}
-	return b
+	return s
 }
 
 func Evolute(b *Blueprint, steps int) int {
 	maxGeodes := 0
-	queue := []*Blueprint{b}
+	queue := []State{CreateState()}
+
+	seen := map[State]bool{}
 
 	for len(queue) > 0 {
-		blueprint := queue[0]
+		state := queue[0]
 		queue = queue[1:]
 
-		maxGeodes = Max(maxGeodes, blueprint.Resources[GEODE])
+		fmt.Printf(
+			"Generation: %d. Robots: Ore: %d, Clay: %d, Obsidian: %d, Geode: %d\n",
+			state.Generation,
+			state.OreRobots,
+			state.ClayRobots,
+			state.ObsidianRobots,
+			state.GeodeRobots,
+		)
 
-		if blueprint.Generation == steps {
+		maxGeodes = Max(maxGeodes, state.Geode)
+
+		if state.Generation == steps {
 			continue
 		}
 
-		possibleRobots := []string{}
-		for _, t := range Priorities {
-			if b.CanAddRobot(t) {
-				possibleRobots = append(possibleRobots, t)
-			}
+		if seen[state] {
+			continue
 		}
 
-		for _, t := range possibleRobots {
-			newBlueprint := blueprint
+		seen[state] = true
 
-			newBlueprint.GatherResources()
-			newBlueprint.AddRobot(t)
-			newBlueprint.Generation += 1
-			queue = append(queue, newBlueprint)
+		if state.Ore >= b.GeodeCost[0] && state.Obsidian >= b.GeodeCost[1] {
+			newState := state
+			newState.GatherResources()
+			newState.Ore -= b.GeodeCost[0]
+			newState.Obsidian -= b.GeodeCost[1]
+			newState.GeodeRobots += 1
+			queue = append(queue, newState)
 		}
 
-		newBlueprint := blueprint
-		newBlueprint.GatherResources()
-		newBlueprint.Generation += 1
-		queue = append(queue, newBlueprint)
+		if state.Ore >= b.ObsidianCost[0] && state.Clay >= b.ObsidianCost[1] {
+			newState := state
+			newState.GatherResources()
+			newState.Ore -= b.ObsidianCost[0]
+			newState.Clay -= b.ObsidianCost[1]
+			newState.ObsidianRobots += 1
+			queue = append(queue, newState)
+		}
+
+		if state.Ore >= b.ClayCost {
+			newState := state
+			newState.GatherResources()
+			newState.Ore -= b.ClayCost
+			newState.ClayRobots += 1
+			queue = append(queue, newState)
+		}
+
+		if state.Ore >= b.OreCost {
+			newState := state
+			newState.GatherResources()
+			newState.Ore -= b.OreCost
+			newState.OreRobots += 1
+			queue = append(queue, newState)
+		}
+
+		newState := state
+		newState.GatherResources()
+		queue = append(queue, newState)
 	}
 
 	return maxGeodes
 }
 
-func (b *Blueprint) GatherResources() {
-	for _, r := range b.Robots {
-		b.Resources[r] += 1
-	}
-}
-
-func (b *Blueprint) CanAddRobot(t string) bool {
-	cost := b.Costs[t]
-	for unit, price := range cost {
-		left := b.Resources[unit]
-		if left < price {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (b *Blueprint) AddRobot(t string) error {
-	cost := b.Costs[t]
-	for unit, price := range cost {
-		if b.Resources[unit] < price {
-			panic("You can't build such robot")
-		}
-		b.Resources[unit] -= price
-	}
-
-	b.Robots = append(b.Robots, t)
-	return nil
-}
-
-func (b Blueprint) AddRobotForFree(t string) {
-	b.Robots = append(b.Robots, t)
+func (b *State) GatherResources() {
+	b.Geode += b.GeodeRobots
+	b.Obsidian += b.ObsidianRobots
+	b.Clay += b.ClayRobots
+	b.Ore += b.OreRobots
+	b.Generation += 1
 }
 
 func main() {
@@ -119,41 +122,25 @@ func main() {
 		line := scanner.Text()
 		blueprint := parseLine(line)
 
-		blueprint.AddRobotForFree(ORE)
-
 		m := Evolute(blueprint, 24)
 		fmt.Println(m)
 	}
 }
 
 func parseLine(line string) *Blueprint {
-	parts := strings.Split(line, ".")
+	blueprint := &Blueprint{}
 
-	numStr := strings.Fields(parts[0])[1]
-	index, _ := strconv.Atoi(numStr[:len(numStr)-1])
-
-	blueprint := CreateBlueprint(index)
-
-	robotRegexp := regexp.MustCompile(`Each (\w+) robot`)
-	r := regexp.MustCompile(`(\d+) (\w+)`)
-	for i := 0; i < len(parts)-1; i++ {
-		robotStatement := parts[i]
-
-		m := robotRegexp.FindStringSubmatch(robotStatement)
-		t := m[1]
-
-		cost := make(map[string]int)
-		matches := r.FindAllString(robotStatement, -1)
-		for i := 0; i < len(matches); i++ {
-			costs := strings.Fields(matches[i])
-			unit := costs[1]
-			price, _ := strconv.Atoi(costs[0])
-
-			cost[unit] = price
-		}
-
-		blueprint.Costs[t] = cost
-	}
+	fmt.Sscanf(
+		line,
+		"Blueprint %d: Each ore robot costs %d ore. Each clay robot costs %d ore. Each obsidian robot costs %d ore and %d clay. Each geode robot costs %d ore and %d obsidian.",
+		&blueprint.index,
+		&blueprint.OreCost,
+		&blueprint.ClayCost,
+		&blueprint.ObsidianCost[0],
+		&blueprint.ObsidianCost[1],
+		&blueprint.GeodeCost[0],
+		&blueprint.GeodeCost[1],
+	)
 
 	return blueprint
 }
