@@ -43,16 +43,42 @@ func main() {
 	buf.next = root
 	root.prev = buf
 
-	fmt.Println(pretty(root))
+	p := root
+	p.value *= 811589153
+	p = p.next
 
-	for _, n := range encoded {
+	for p != root {
+		p.value *= 811589153
+		p = p.next
+	}
+
+	for i := 0; i < 10; i++ {
+		decrypt(encoded, root)
+	}
+
+	index := 1
+	p = root.next
+	for p != nil && p != root && p.value != 0 {
+		index++
+		p = p.next
+	}
+	index = index % len(encoded)
+	l := len(encoded)
+	a := getByIndex(root, (index+1000)%l).value
+	b := getByIndex(root, (index+2000)%l).value
+	c := getByIndex(root, (index+3000)%l).value
+	fmt.Println(a + b + c)
+}
+
+func decrypt(order []*Number, root *Number) *Number {
+	for _, n := range order {
 		id := n.position
 		target := root
 		for target.position != id {
 			target = target.next
 		}
 
-		steps := target.value
+		steps := target.value % (len(order) - 1)
 
 		if steps < 0 {
 			for i := 0; i > steps; i-- {
@@ -87,18 +113,7 @@ func main() {
 		}
 	}
 
-	index := 1
-	p := root.next
-	for p != nil && p != root && p.value != 0 {
-		index++
-		p = p.next
-	}
-	index = index % len(encoded)
-	l := len(encoded)
-	a := getByIndex(root, (index+1000)%l).value
-	b := getByIndex(root, (index+2000)%l).value
-	c := getByIndex(root, (index+3000)%l).value
-	fmt.Println(a + b + c)
+	return root
 }
 
 func getByIndex(root *Number, index int) *Number {
