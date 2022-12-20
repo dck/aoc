@@ -40,18 +40,12 @@ func Evolute(b *Blueprint, steps int) int {
 
 	seen := map[State]bool{}
 
+	maxOreRequired := Max(b.GeodeCost[0], Max(b.ObsidianCost[0], Max(b.ClayCost, b.OreCost)))
+	maxClayRequired := Max(b.GeodeCost[1], Max(b.ObsidianCost[1], b.ClayCost))
+
 	for len(queue) > 0 {
 		state := queue[0]
 		queue = queue[1:]
-
-		fmt.Printf(
-			"Generation: %d. Robots: Ore: %d, Clay: %d, Obsidian: %d, Geode: %d\n",
-			state.Generation,
-			state.OreRobots,
-			state.ClayRobots,
-			state.ObsidianRobots,
-			state.GeodeRobots,
-		)
 
 		maxGeodes = Max(maxGeodes, state.Geode)
 
@@ -83,7 +77,7 @@ func Evolute(b *Blueprint, steps int) int {
 			queue = append(queue, newState)
 		}
 
-		if state.Ore >= b.ClayCost {
+		if state.Ore >= b.ClayCost && state.ClayRobots < maxClayRequired {
 			newState := state
 			newState.GatherResources()
 			newState.Ore -= b.ClayCost
@@ -91,7 +85,7 @@ func Evolute(b *Blueprint, steps int) int {
 			queue = append(queue, newState)
 		}
 
-		if state.Ore >= b.OreCost {
+		if state.Ore >= b.OreCost && state.OreRobots < maxOreRequired {
 			newState := state
 			newState.GatherResources()
 			newState.Ore -= b.OreCost
@@ -118,13 +112,33 @@ func (b *State) GatherResources() {
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
+	blueprints := []*Blueprint{}
 	for scanner.Scan() {
 		line := scanner.Text()
 		blueprint := parseLine(line)
 
-		m := Evolute(blueprint, 24)
-		fmt.Println(m)
+		blueprints = append(blueprints, blueprint)
 	}
+
+	part1 := 0
+	for _, b := range blueprints {
+		fmt.Printf("Calculating Blueprint %d  ", b.index)
+		m := Evolute(b, 24)
+		fmt.Printf("Result %d\n", m)
+
+		part1 += b.index * m
+	}
+	fmt.Println(part1)
+
+	part2 := 1
+	for _, b := range blueprints[:3] {
+		fmt.Printf("Calculating Blueprint %d  ", b.index)
+		m := Evolute(b, 32)
+		fmt.Printf("Result %d\n", m)
+
+		part2 *= m
+	}
+	fmt.Println(part2)
 }
 
 func parseLine(line string) *Blueprint {
