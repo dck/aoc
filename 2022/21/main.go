@@ -19,6 +19,8 @@ type Monkey struct {
 	op    string
 	left  string
 	right string
+	x     bool
+	cache int
 }
 
 //root: pppw + sjmn
@@ -26,7 +28,7 @@ type Monkey struct {
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
-	monkeys := map[string]Monkey{}
+	monkeys := map[string]*Monkey{}
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -39,35 +41,112 @@ func main() {
 			op := strings.TrimSpace(fields[1])
 			right := strings.TrimSpace(fields[2])
 
-			monkeys[name] = Monkey{kind: OP, left: left, op: op, right: right}
+			monkeys[name] = &Monkey{kind: OP, left: left, op: op, right: right}
 		} else {
 			num, _ := strconv.Atoi(fields[0])
-			monkeys[name] = Monkey{kind: VAL, value: num}
+			monkeys[name] = &Monkey{kind: VAL, value: num}
 		}
 	}
 
-	fmt.Println(Calculate(monkeys, "root"))
+	Calculate(monkeys, "root")
+	Mark(monkeys, "root")
+
+	fmt.Println(Solve(monkeys, "root", 0))
 }
 
-func Calculate(monkeys map[string]Monkey, key string) int {
+func Calculate(monkeys map[string]*Monkey, key string) int {
 	m, ok := monkeys[key]
 	if !ok {
 		return 0
 	}
+
 	if m.kind == VAL {
-		return m.value
+		m.cache = m.value
 	} else {
 		switch m.op {
 		case "+":
-			return Calculate(monkeys, m.left) + Calculate(monkeys, m.right)
+			m.cache = Calculate(monkeys, m.left) + Calculate(monkeys, m.right)
 		case "-":
-			return Calculate(monkeys, m.left) - Calculate(monkeys, m.right)
+			m.cache = Calculate(monkeys, m.left) - Calculate(monkeys, m.right)
 		case "*":
-			return Calculate(monkeys, m.left) * Calculate(monkeys, m.right)
+			m.cache = Calculate(monkeys, m.left) * Calculate(monkeys, m.right)
 		case "/":
-			return Calculate(monkeys, m.left) / Calculate(monkeys, m.right)
+			m.cache = Calculate(monkeys, m.left) / Calculate(monkeys, m.right)
 		}
 	}
 
-	return 0
+	return m.cache
+}
+
+func Mark(monkeys map[string]*Monkey, key string) bool {
+	m := monkeys[key]
+
+	if m.kind == VAL {
+		m.x = key == "humn"
+	} else {
+		m.x = Mark(monkeys, m.left) || Mark(monkeys, m.right)
+	}
+
+	return m.x
+}
+
+func Solve(monkeys map[string]*Monkey, key string, desired int) int {
+	m := monkeys[key]
+
+	left := monkeys[m.left]
+	right := monkeys[m.right]
+
+	if key == "root" {
+		if left.x {
+			return Solve(monkeys, m.left, right.cache)
+		} else {
+			return Solve(monkeys, m.right, left.cache)
+		}
+	}
+
+	if m.left == "humn" || m.right == "humn" {
+		var known int
+		if m.left == "humn" {
+			known = right.cache
+		} else {
+			known = left.cache
+		}
+
+		switch m.op {
+		case "+":
+			return desired - known
+		case "-":
+			return desired + known
+		case "*":
+			return desired / known
+		case "/":
+			return desired * known
+		}
+	}
+
+	if left.x {
+		switch m.op {
+		case "+":
+			desired = desired - right.cache
+		case "-":
+			desired = desired + right.cache
+		case "*":
+			desired = desired / right.cache
+		case "/":
+			desired = desired * right.cache
+		}
+		return Solve(monkeys, m.left, desired)
+	} else {
+		switch m.op {
+		case "+":
+			desired = desired - left.cache
+		case "-":
+			desired = left.cache - desired
+		case "*":
+			desired = desired / left.cache
+		case "/":
+			desired = left.cache / desired
+		}
+		return Solve(monkeys, m.right, desired)
+	}
 }
