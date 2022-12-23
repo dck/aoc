@@ -302,7 +302,7 @@ func main() {
 		Sub:      refreshChan,
 		Board:    board,
 		tickChan: refreshChan,
-		step:     0 * time.Millisecond,
+		step:     250 * time.Millisecond,
 	}
 	p := tea.NewProgram(model)
 
