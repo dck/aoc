@@ -18,6 +18,11 @@ var directions [4][2]int = [4][2]int{
 	{1, 0},
 }
 
+type Point struct {
+	x int
+	y int
+}
+
 func Min(a, b int) int {
 	if a > b {
 		return b
@@ -56,7 +61,7 @@ func GenDirections(index int) [3][2]int {
 
 type Board struct {
 	elves  []*Elf
-	coords map[[2]int]bool
+	coords map[Point]bool
 	round  int
 
 	top    int
@@ -71,14 +76,14 @@ type Refresh struct {
 
 func CreateBoard(grid []string) *Board {
 	elves := make([]*Elf, 0)
-	coord := make(map[[2]int]bool)
+	coord := make(map[Point]bool)
 
 	for i, row := range grid {
 		for j := 0; j < len(row); j++ {
 			if grid[i][j] == '#' {
 				elf := &Elf{x: j, y: i, pX: j, pY: i}
 
-				coord[[2]int{j, i}] = true
+				coord[Point{j, i}] = true
 				elves = append(elves, elf)
 			}
 		}
@@ -101,7 +106,6 @@ func (b *Board) Score() int {
 
 func (b *Board) Propose() {
 	for _, elf := range b.elves {
-
 		needMove := false
 		for i := -1; i <= 1; i++ {
 			for j := -1; j <= 1; j++ {
@@ -109,10 +113,10 @@ func (b *Board) Propose() {
 					continue
 				}
 
-				x := elf.x + i
-				y := elf.y + j
+				x := elf.x + j
+				y := elf.y + i
 
-				key := [2]int{x, y}
+				key := Point{x, y}
 
 				if b.coords[key] {
 					needMove = true
@@ -134,7 +138,7 @@ func (b *Board) Propose() {
 				x := elf.x + d[0]
 				y := elf.y + d[1]
 
-				key := [2]int{x, y}
+				key := Point{x, y}
 
 				if b.coords[key] {
 					canMove = false
@@ -145,38 +149,29 @@ func (b *Board) Propose() {
 				elf.pX = elf.x + directions[1][0]
 				elf.pY = elf.y + directions[1][1]
 				break
-			} else {
-				elf.pX = elf.x
-				elf.pY = elf.y
 			}
 		}
 	}
 }
 
 func (b *Board) Move() {
-	elves := map[[2]int]*Elf{}
+	elves := map[Point]*Elf{}
 
 	for _, elf := range b.elves {
-		coords := [2]int{elf.pX, elf.pY}
+		coords := Point{elf.pX, elf.pY}
 
-		if pair, ok := elves[coords]; ok {
+		if _, ok := elves[coords]; ok {
 			delete(elves, coords)
-
-			elf.pX = elf.x
-			elf.pY = elf.y
-
-			pair.pX = pair.x
-			pair.pY = pair.y
 		} else {
 			elves[coords] = elf
 		}
 	}
 
 	for _, elf := range elves {
-		delete(b.coords, [2]int{elf.x, elf.y})
+		delete(b.coords, Point{elf.x, elf.y})
 		elf.x = elf.pX
 		elf.y = elf.pY
-		b.coords[[2]int{elf.x, elf.y}] = true
+		b.coords[Point{elf.x, elf.y}] = true
 
 		b.top = Min(b.top, elf.y)
 		b.bottom = Max(b.bottom, elf.y)
@@ -232,7 +227,7 @@ func (m *Model) View() string {
 	for i := m.Board.top - 5; i <= m.Board.bottom+5; i++ {
 		for j := m.Board.left - 5; j <= m.Board.right+5; j++ {
 
-			key := [2]int{j, i}
+			key := Point{j, i}
 
 			if m.Board.coords[key] {
 				fmt.Fprint(&s, "#")
@@ -264,7 +259,7 @@ func main() {
 		Sub:      refreshChan,
 		Board:    board,
 		tickChan: refreshChan,
-		step:     250 * time.Millisecond,
+		step:     10 * time.Millisecond,
 	}
 	p := tea.NewProgram(model)
 
