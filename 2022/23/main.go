@@ -44,16 +44,16 @@ type Elf struct {
 	pY int
 }
 
-func GenDirections(index int) [3][2]int {
+func GenDirections(index int) [3]Point {
 	direction := directions[index]
 
 	if direction[0] == 0 {
-		return [3][2]int{
+		return [3]Point{
 			{-1, direction[1]}, {0, direction[1]}, {1, direction[1]},
 		}
 
 	} else {
-		return [3][2]int{
+		return [3]Point{
 			{direction[0], -1}, {direction[0], 0}, {direction[0], 1},
 		}
 	}
@@ -135,19 +135,20 @@ func (b *Board) Propose() {
 
 			canMove := true
 			for _, d := range directions {
-				x := elf.x + d[0]
-				y := elf.y + d[1]
+				x := elf.x + d.x
+				y := elf.y + d.y
 
 				key := Point{x, y}
 
 				if b.coords[key] {
 					canMove = false
+					break
 				}
 			}
 
 			if canMove {
-				elf.pX = elf.x + directions[1][0]
-				elf.pY = elf.y + directions[1][1]
+				elf.pX = elf.x + directions[1].x
+				elf.pY = elf.y + directions[1].y
 				break
 			}
 		}
