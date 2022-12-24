@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 var directions = [...]Point{
@@ -213,6 +214,7 @@ func main() {
 
 	board := CreateBoard(grid)
 
+	start := time.Now()
 	currentRound := 0
 	steps := []Step{
 		{player: Point{board.start.x - 1, board.start.y - 1}, round: currentRound},
@@ -278,4 +280,6 @@ func main() {
 	}
 
 	fmt.Println(totalSteps)
+	elapsed := time.Since(start)
+	fmt.Printf("Took %s\n", elapsed)
 }
