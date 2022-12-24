@@ -218,22 +218,20 @@ func main() {
 		{player: Point{board.start.x - 1, board.start.y - 1}, round: currentRound},
 	}
 	totalSteps := 0
-	found := false
 
-	for len(steps) > 0 && !found {
+	finishes := []Point{
+		{board.finish.x - 1, board.finish.y - 1},
+		{board.start.x - 1, board.start.y - 1},
+		{board.finish.x - 1, board.finish.y - 1},
+	}
+
+	for len(steps) > 0 && len(finishes) > 0 {
+		end := finishes[0]
 		currentRoundSteps := map[Point]Step{}
 		for len(steps) > 0 && steps[0].round == currentRound {
 			step := steps[0]
 			steps = steps[1:]
 			currentRoundSteps[step.player] = step
-		}
-
-		if currentRound == 7 {
-			for _, ste := range currentRoundSteps {
-				fmt.Println(currentRound)
-				fmt.Println(ste.player)
-				fmt.Println(board.Stringify(ste.player))
-			}
 		}
 
 		board.Move()
@@ -242,15 +240,23 @@ func main() {
 		for _, step := range currentRoundSteps {
 			player := step.player
 
-			if player.x+1 == board.finish.x && player.y+2 == board.finish.y {
+			if player.x == end.x && player.y == end.y {
 				totalSteps = step.round
-				found = true
+				steps = nil
+				steps = append(steps, Step{player: Point{player.x, player.y}, round: step.round + 1})
+
+				finishes = finishes[1:]
 				break
 			}
 
 			for _, d := range directions {
 				newX := player.x + d.x
 				newY := player.y + d.y
+
+				if newX == end.x && newY == end.y {
+					steps = append(steps, Step{player: Point{newX, newY}, round: step.round + 1})
+					continue
+				}
 
 				if newX < 0 || newY < 0 || newX >= board.width || newY >= board.height {
 					continue
@@ -271,5 +277,5 @@ func main() {
 		currentRound++
 	}
 
-	fmt.Println(totalSteps + 1)
+	fmt.Println(totalSteps)
 }
