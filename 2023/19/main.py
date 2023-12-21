@@ -134,7 +134,6 @@ r = PartRange([1, 4000], [1, 4000], [1, 4000], [1, 4000])
 applied_ranges = check_workflow_range('in', r)
 
 for r in sorted(applied_ranges, key=lambda r: r.cost()):
-  print(r)
   total += r.cost()
 
 print("Part 2:", total)
